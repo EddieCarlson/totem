@@ -7,6 +7,7 @@
 #include "./common.h"
 #include "./timeOval.h"
 #include "./walker.h"
+#include "./tetris.h"
 
 int iterationCount = 0;
 
@@ -16,10 +17,11 @@ Walker* w;
 Walker* w2;
 Walker* w3;
 TimeOval* t;
+TetrisLite* tl;
 
 double colFun(uint32_t t) {
   double seconds = (double) t / 1000.0;
-  double val = 0.5 + 1.25 * ((seconds * 4) + (8 * ((1.0 + (cos(seconds * 2 * PI / 20))) / 2.0)));
+  double val = 0.4 * ((seconds * 1.5) + (2 * ((1.0 + (cos(seconds * 2 * PI / 27.0))) / 2.0)));
 
   return fmod(val, 8.0);
 }
@@ -27,27 +29,29 @@ double colFun(uint32_t t) {
 double rowFun(uint32_t t) {
   double seconds = (double) t / 1000.0;
   
-  return (seconds * 15) + (5 * cos(seconds * 2 * PI / 13.0));
+  return (seconds * 8) + (2 * cos(seconds * 2 * PI / 13.0));
 }
 
 double slopeFun(uint32_t t) {
   double seconds = (double) t / 1000.0;
-  return (20 * ((1.1 + cos(seconds * 2.0 * PI / 23.0)) / 2.0));
+  return 8 + (3 * ((0.65 + cos(seconds * 2.0 * PI / 23.0)) / 2.0));
 }
 
 double zero(uint32_t t) {
   return 0.0;
 }
 
+CRGB colors[4] = {CRGB::Red, CRGB::Green, CRGB::Blue, CRGB::Gold};
+
 void setup() {
-  FastLED.addLeds<WS2812B, PIN_0, RGB>(strip0, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_1, RGB>(strip1, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_2, RGB>(strip2, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_3, RGB>(strip3, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_4, RGB>(strip4, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_5, RGB>(strip5, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_6, RGB>(strip6, NUM_LEDS);
-  FastLED.addLeds<WS2812B, PIN_7, RGB>(strip7, NUM_LEDS);
+  FastLED.addLeds<WS2812B, PIN_0, RGB>(strip0, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_1, RGB>(strip1, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_2, RGB>(strip2, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_3, RGB>(strip3, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_4, RGB>(strip4, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_5, RGB>(strip5, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_6, RGB>(strip6, NUM_ROWS);
+  FastLED.addLeds<WS2812B, PIN_7, RGB>(strip7, NUM_ROWS);
 
   fill_rainbow(rainbow, RAINBOW_HUES, 0, 1);
 
@@ -63,6 +67,7 @@ void setup() {
   w2 = new Walker(0, 0, 0, 0, 0, CRGB::Gold);
   w3 = new Walker(0, 0, 0, 0, 0, CRGB::Purple);
   t = new TimeOval(rowFun, colFun, slopeFun);
+  tl = new TetrisLite(colors, 50);
 }
 
 int curCol = 0;
@@ -83,13 +88,13 @@ void buttonShow() {
   buttonCheck();
 
   for (int c = 0; c < 8; c++) {
-    for (int r = 0; r < NUM_LEDS; r++) {
+    for (int r = 0; r < NUM_ROWS; r++) {
       setPixel(c, r, CRGB::Black);
     }
   }
 
   int nextCol = (curCol + 1) % 8;
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_ROWS; i++) {
     setPixel(curCol, i, CRGB::Green);
     setPixel(nextCol, i, CRGB::Blue);
   }
@@ -176,7 +181,7 @@ void setSpeeds2() {
 void advanceRainbow() {
   setSpeeds2();
   for (int c = 0; c < 8; c++) {
-    for (int r = 0; r < NUM_LEDS; r++) {
+    for (int r = 0; r < NUM_ROWS; r++) {
       int colorIndex = ((int) (((double) curHue) + (cFactor * c) + (rFactor * r)) + RAINBOW_HUES) % RAINBOW_HUES;
       // int colorIndex = max(min(round(fmod(((double) curHue) + (cSpeed * c) + (rSpeed * r), RAINBOW_HUES)), RAINBOW_HUES), 0);
       // int colorIndex = (curHue + (r) + (c * 6)) % RAINBOW_HUES; 
@@ -212,7 +217,7 @@ void setNextWalkP(Walker* z) {
   fadePixel(z->curCol, z->curRow, 0.5);
   z->advance();
   // setPixel(curWalkPixel[0], curWalkPixel[1], color);
-  setPixel(z->curCol, NUM_LEDS - z->curRow, z->color);
+  setPixel(z->curCol, NUM_ROWS - z->curRow, z->color);
 }
 
 void setNextWalkPixel3() {
@@ -245,11 +250,11 @@ void setNextWalkPixel(CRGB color) {
     numUps = numUps + 1;  
     curWalkDir = 0;
     prevLaterals = 0;
-    curWalkPixel[1] = (curWalkPixel[1] + 1) % NUM_LEDS;
+    curWalkPixel[1] = (curWalkPixel[1] + 1) % NUM_ROWS;
   }
   fadeAll(walkFade);
   //setPixel(curWalkPixel[0], curWalkPixel[1], color);
-  setPixel(curWalkPixel[0], NUM_LEDS - curWalkPixel[1], color);
+  setPixel(curWalkPixel[0], NUM_ROWS - curWalkPixel[1], color);
 }
 
 double firstLateralChances2[10] = {0.0, 0.02, 0.05, 0.1, 0.2, 0.2, 0.2, 0.25, 0.3, 0.4};
@@ -285,7 +290,7 @@ void setNextWalkPixel2(CRGB color) {
     countSinceLastUp++;  
     curWalkDir2 = 0;
     countSinceLastUp = 0;
-    curWalkPixel2[1] = fmod((curWalkPixel2[1] + 0.1), NUM_LEDS);
+    curWalkPixel2[1] = fmod((curWalkPixel2[1] + 0.1), NUM_ROWS);
   }
   fadeAll(walkFade);
   setPixelAA(curWalkPixel2[0], curWalkPixel2[1], color);
@@ -294,7 +299,7 @@ void setNextWalkPixel2(CRGB color) {
 double colFadeF(uint32_t t) {
   double seconds = ((double) t) / 1000.0;
 
-  return 64.0 + 196.0 * ((1.0 + sin(seconds * 2 * PI / 120.0)) / 2.0);
+  return 128.0 + 128.0 * ((0.5 + sin(seconds * 2 * PI / 120.0)) / 2.0);
 }
 
 TimeFuncS* colFadeRange = new TimeFuncS(colFadeF);
@@ -305,16 +310,14 @@ void rainbowOval() {
   double cfr = colFadeRange->update();
   for (int c = 0; c < 8; c++) {
     double z = t->zAtCol(c);
-    for (int r = 0; r < NUM_LEDS; r++) {
+    for (int r = 0; r < NUM_ROWS; r++) {
       double dr = (double) r;
-      double dist = z + ((double) NUM_LEDS) - dr;
-      int colorIndexF = (int) (cfr * dist / ((double) NUM_LEDS));
+      double dist = z + ((double) NUM_ROWS) - dr;
+      int colorIndexF = (int) (cfr * dist / ((double) NUM_ROWS));
       int colorIndex = ((colorIndexF % RAINBOW_HUES) + RAINBOW_HUES) % RAINBOW_HUES;
       if (colorIndex > 256 || colorIndex < 0) {
         Serial.println(colorIndex);
       }
-      // int colorIndex = max(min(round(fmod(((double) curHue) + (cSpeed * c) + (rSpeed * r), RAINBOW_HUES)), RAINBOW_HUES), 0);
-      // int colorIndex = (curHue + (r) + (c * 6)) % RAINBOW_HUES; 
       setPixel(c, r, rainbow[colorIndex]);
     }
   }
@@ -322,12 +325,18 @@ void rainbowOval() {
 
 void loop() {
 
+  // tl->update();
+
+  // FastLED.show();
+  // delay(50);
+  // iterationCount++;
+  // fadeAll(0.2);
   rainbowOval();
-  fadeAll(0.14);
+  fadeAll(0.16);
   // setAll(rainbow[(iterationCount * 10) % RAINBOW_HUES]);
   // fadeAll(0.12);
-  // FastLED.show();
-  // delay(1000);
+  FastLED.show();
+  delay(60);
 
   // for (int c = 0; c < 8; c++) {
   //   for (int r = 10; r < NUM_LEDS - 10; r++) {
@@ -338,7 +347,6 @@ void loop() {
 
 
   // setNextWalkPixel3();
-  // delay(6);
   // buttonShow();
   // advanceRainbow();
   // fadeAll(0.17);
@@ -390,7 +398,4 @@ void loop() {
   // setPixel(6, 10, CRGB::Green);
   // setPixel(7, 10, CRGB::Purple);
 
-  FastLED.show();
-  delay(45);
-  iterationCount++;
 }

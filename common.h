@@ -3,7 +3,7 @@
 #include <FastLED.h>
 #include <Bounce2.h>
 
-const int NUM_LEDS = 75;
+const int NUM_ROWS = 75;
 const int PIN_0 = 2;
 const int PIN_1 = 3;
 const int PIN_2 = 7;
@@ -18,14 +18,14 @@ const int MISSING_PIXEL_STRIP = 6;
 const int BUTTON1_PIN = 11;
 const int BUTTON2_PIN = 12;
 
-CRGB strip0[NUM_LEDS];
-CRGB strip1[NUM_LEDS];
-CRGB strip2[NUM_LEDS];
-CRGB strip3[NUM_LEDS];
-CRGB strip4[NUM_LEDS];
-CRGB strip5[NUM_LEDS];
-CRGB strip6[NUM_LEDS];
-CRGB strip7[NUM_LEDS];
+CRGB strip0[NUM_ROWS];
+CRGB strip1[NUM_ROWS];
+CRGB strip2[NUM_ROWS];
+CRGB strip3[NUM_ROWS];
+CRGB strip4[NUM_ROWS];
+CRGB strip5[NUM_ROWS];
+CRGB strip6[NUM_ROWS];
+CRGB strip7[NUM_ROWS];
 
 const int RAINBOW_HUES = 256;
 CRGB rainbow[RAINBOW_HUES];
@@ -63,42 +63,55 @@ double rand01() {
 }
 
 int safeRow(int row) {
-  return (row + NUM_LEDS) % NUM_LEDS;
+  return (row + NUM_ROWS) % NUM_ROWS;
+}
+
+int topRowIdxForCol(int col) {
+    if (col == MISSING_PIXEL_STRIP) {
+        return NUM_ROWS - 2;
+    } else {
+        return NUM_ROWS - 1;
+    }
 }
 
 // pixel 0 is near the top - this lets us have pixel/row 0 at bot of column
 int upRow(int row, int col) {
-  if (col == MISSING_PIXEL_STRIP) {
-    return NUM_LEDS - row - 2;
+    return topRowIdxForCol(col) - row;
+}
+
+void fadePixel(int col, int _row, double factor) {
+  int row = upRow(_row, col);
+  if (col >= 0 && col < 8 && row >=0 && row < NUM_ROWS) {
+    strip(col)[row] = strip(col)[row].nscale8(factor * 256);
   }
-  return NUM_LEDS - row - 1;
 }
 
 void setPixel(int col, int _row, CRGB color) {
   int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >= 0 && row < NUM_LEDS) {
+  if (col >= 0 && col < 8 && row >= 0 && row < NUM_ROWS) {
     strip(col)[row] = color;
   }
 }
 
+void setPixel(int col, int _row, CRGB color, double fade) {
+  int row = upRow(_row, col);
+  if (col >= 0 && col < 8 && row >= 0 && row < NUM_ROWS) {
+    strip(col)[row] = color;
+  }
+  fadePixel(col, row, fade);
+}
+
 CRGB getPixel(int col, int _row) {
   int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >= 0 && row < NUM_LEDS) {
+  if (col >= 0 && col < 8 && row >= 0 && row < NUM_ROWS) {
     return strip(col)[row];
   } else {
     return CRGB::Black;
   }
 }
 
-void fadePixel(int col, int _row, double factor) {
-  int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >=0 && row < NUM_LEDS) {
-    strip(col)[row] = strip(col)[row].nscale8(factor * 256);
-  }
-}
-
 void fadeAll(double factor) {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_ROWS; i++) {
     for (int s = 0; s < 8; s++) {
       fadePixel(s, i, factor);
     }
@@ -110,14 +123,14 @@ void stripNumbering() {
   for (int i = 0; i < 8; i++) {
     for (int r = 0; r <= i; r++) {
       setPixel(i, r, CRGB::Blue);
-      setPixel(i, NUM_LEDS - 1 - r, CRGB::Blue);
+      setPixel(i, NUM_ROWS - 1 - r, CRGB::Blue);
     }
   }
 }
 
 void setAll(CRGB color) {
   for (int c = 0; c < 8; c++) {
-    for (int r = 0; r < NUM_LEDS; r++) {
+    for (int r = 0; r < NUM_ROWS; r++) {
       setPixel(c, r, color);
     }
   }

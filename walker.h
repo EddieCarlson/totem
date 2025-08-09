@@ -40,7 +40,7 @@ class Walker {
         numUps = numUps + 1;  
         curWalkDir = 0;
         prevLaterals = 0;
-        curRow = (curRow + 1) % NUM_LEDS;
+        curRow = (curRow + 1) % NUM_ROWS;
       }
     }
 };
