@@ -5,7 +5,7 @@ object External {
 
 object DataProcessor {
   import External.amountOwed
-  
+
   var filesProcessed: Int
 
   def processFile(data_filename: String): Int = {
@@ -14,6 +14,7 @@ object DataProcessor {
     if (data_filename.endsWith(".csv") && data_filename.startsWith("data_report") && data_filename.contains("tax_information")) {
       processData(fileLines)
     } else {
+      filesProcessed = filesProcessed - 1
       -1
     }
   }
