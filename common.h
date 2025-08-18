@@ -79,31 +79,36 @@ int upRow(int row, int col) {
     return topRowIdxForCol(col) - row;
 }
 
+int pixelOnStick(int col, int row) {
+    return col >= 0 && col < 8 && row >= 0 && row <= topRowIdxForCol(col);
+}
+
+
 void fadePixel(int col, int _row, double factor) {
   int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >=0 && row < NUM_ROWS) {
+  if (pixelOnStick(col, row)) {
     strip(col)[row] = strip(col)[row].nscale8(factor * 256);
   }
 }
 
 void setPixel(int col, int _row, CRGB color) {
   int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >= 0 && row < NUM_ROWS) {
+  if (pixelOnStick(col, row)) {
     strip(col)[row] = color;
   }
 }
 
 void setPixel(int col, int _row, CRGB color, double fade) {
   int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >= 0 && row < NUM_ROWS) {
+  if (pixelOnStick(col, row)) {
     strip(col)[row] = color;
+    fadePixel(col, _row, fade);
   }
-  fadePixel(col, row, fade);
 }
 
 CRGB getPixel(int col, int _row) {
   int row = upRow(_row, col);
-  if (col >= 0 && col < 8 && row >= 0 && row < NUM_ROWS) {
+  if (pixelOnStick(col, row)) {
     return strip(col)[row];
   } else {
     return CRGB::Black;
@@ -111,8 +116,9 @@ CRGB getPixel(int col, int _row) {
 }
 
 void fadeAll(double factor) {
-  for (int i = 0; i < NUM_ROWS; i++) {
-    for (int s = 0; s < 8; s++) {
+  for (int s = 0; s < 8; s++) {
+    int rows = topRowIdxForCol(s);
+    for (int i = 0; i <= rows; i++) {
       fadePixel(s, i, factor);
     }
   }

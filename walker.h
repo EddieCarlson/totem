@@ -2,7 +2,7 @@
 
 #include "./common.h"
 
-double lateralChances[8] = {0.9, 0.83, 0.72, 0.62, 0.4, -1, -1};
+double lateralChances[8] = {0.9, 0.85, 0.8, 0.62, 0.4, -1, -1};
 
 class Walker {
   public:
@@ -24,7 +24,7 @@ class Walker {
 
     void advance() {
       double randVal = (double) rand() / (double) RAND_MAX;
-      if (numUps > 1 && prevLaterals < 8 && randVal < lateralChances[prevLaterals]) {
+        if (numUps > 1 && prevLaterals < 8 && randVal < lateralChances[prevLaterals]) {
         if (curWalkDir == 0) {
             double dirChoice = (double) rand() / (double) RAND_MAX;
             if (dirChoice > 0.5) {

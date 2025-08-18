@@ -43,38 +43,42 @@ class ColorPixel {
     }
 };
 
+const int maxFlightBlocks = 48;
+
 class TetrisLite {
   public:
     int stack[8]; // bottom row of stacked static blocks at the top of the rod in each col (starts at NUM_LEDS - i.e. off the rod)
     int nextCol = 0;
-    ColorPixel* inFlightP[24];
-    bool inFlight[8];
+    ColorPixel* inFlightP[maxFlightBlocks];
+    // bool inFlight[8];
     CRGB colors[4];
     uint32_t lastLaunched = 0;
     double velocity;
     double interval;
     uint32_t lastUpdate;
     CRGB stackColors[8][NUM_ROWS];
+    int inFlight;
 
     TetrisLite(CRGB* _colors, double _velocity) {
+        inFlight = 0;
         velocity = _velocity;
-        interval = 30;
+        interval = 200;
         for (int i = 0; i < 4; i++) {
             colors[i] = _colors[i];
         }
-        for (int c = 0; c < 24; c++) {
+        for (int c = 0; c < maxFlightBlocks; c++) {
             inFlightP[c] = new ColorPixel();
         }
         resetStack();
     }
 
     void resetStack() {
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < maxFlightBlocks; i++) {
             inFlightP[i]->reset();
         }
         for (int c = 0; c < 8; c++) {
             stack[c] = topRowIdxForCol(c) + 1;
-            inFlight[c] = false;
+            // inFlight[c] = false;
             for(int r = 0; r < NUM_ROWS; r++) {
                 stackColors[c][r] = CRGB::Black;
             }
@@ -82,33 +86,19 @@ class TetrisLite {
         lastUpdate = millis();
     }
 
-    int getNextCol() {
+    void launchPixel() {
         uint32_t t = millis();
         if (t - lastLaunched > interval) {
-            int nextCol = (int) (rand01() * 8);
-            // while (inFlightP[nextCol]->active) {
-            //     nextCol = (int) (rand01() * 8);
-            // }
             lastLaunched = t;
-            return nextCol;
-            // int c = nextCol;
-            // nextCol = (nextCol + 1) % 8;
-            // return c;
-        } else {
-            return -1;
-        }
-    }
-
-    void launchPixel() {
-        int c = getNextCol();
-        if (c >= 0) {
+            int nextCol = (int) (rand01() * 8);
             CRGB color = colors[(int) (rand01() * 4)];
-            inFlightP[c]->activate(c, color);
+            inFlightP[inFlight]->activate(nextCol, color);
+            inFlight = (inFlight + 1) % maxFlightBlocks;
         }
     }
 
     void movePixels() {
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < maxFlightBlocks; i++) {
             ColorPixel* cp = inFlightP[i];
             if (cp->active) {
                 double rows = velocity * ((double) (millis() - lastUpdate)) / 1000.0;
@@ -116,8 +106,8 @@ class TetrisLite {
                 if (cp->row >= stack[cp->col] - 1.1) {
                     stack[cp->col] = stack[cp->col] - 1;
                     CRGB c = cp->color;
-                    stackColors[cp->col][stack[cp->col]] = cp->color;
-                    stackColors[cp->col][stack[cp->col]] = stackColors[cp->col][stack[cp->col]].nscale8(0.15 * 256);
+                    stackColors[cp->col][stack[cp->col]] = c;
+                    // stackColors[cp->col][stack[cp->col]] = stackColors[cp->col][stack[cp->col]].nscale8(0.15 * 256);
                     // setPixel(cp->col, stack[cp->col], cp->color, 0.1);
                     cp->reset();
                 }
@@ -132,13 +122,16 @@ class TetrisLite {
         for (int c = 0; c < 8; c++) {
             // int topOfStack = stack[c];
             for (int r = 0; r < NUM_ROWS; r++) {
-                setPixel(c, r, stackColors[c][r]);
+                setPixel(c, r, stackColors[c][r], 0.11);
             }
         }
-        for (int c = 0; c < 24; c++) {
+        for (int c = 0; c < maxFlightBlocks; c++) {
             ColorPixel* cp = inFlightP[c];
             if (cp->active) {
-                setPixel(c, cp->closestRow(), cp->color, 0.15);
+                int closestRow = cp->closestRow();
+                setPixel(c, closestRow, cp->color, 0.3);
+                setPixel(c, closestRow - 1, cp->color, 0.1);
+                setPixel(c, closestRow - 2, cp->color, 0.06);
             }
         }
     }

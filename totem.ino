@@ -21,7 +21,7 @@ TetrisLite* tl;
 
 double colFun(uint32_t t) {
   double seconds = (double) t / 1000.0;
-  double val = 0.4 * ((seconds * 1.5) + (2 * ((1.0 + (cos(seconds * 2 * PI / 27.0))) / 2.0)));
+  double val = 25 + (10 * ((0.3 + (cos(seconds * 2 * PI / 27.0))) / 2.0));
 
   return fmod(val, 8.0);
 }
@@ -29,7 +29,7 @@ double colFun(uint32_t t) {
 double rowFun(uint32_t t) {
   double seconds = (double) t / 1000.0;
   
-  return (seconds * 8) + (2 * cos(seconds * 2 * PI / 13.0));
+  return (seconds * 10) + (3 * cos(seconds * 2 * PI / 13.0));
 }
 
 double slopeFun(uint32_t t) {
@@ -67,22 +67,11 @@ void setup() {
   w2 = new Walker(0, 0, 0, 0, 0, CRGB::Gold);
   w3 = new Walker(0, 0, 0, 0, 0, CRGB::Purple);
   t = new TimeOval(rowFun, colFun, slopeFun);
-  tl = new TetrisLite(colors, 50);
+  tl = new TetrisLite(colors, 30);
 }
 
 int curCol = 0;
 
-void buttonCheck() {
-  button1.update();
-  button2.update();
-
-  if (button1.pressed()) {
-    curCol = (curCol + 7) % 8;
-  }
-  if (button2.pressed()) {
-    curCol = (curCol + 1) % 8;
-  }
-}
 
 void buttonShow() {
   buttonCheck();
@@ -214,10 +203,10 @@ void setPixelAA(double col, double row, CRGB color) {
 }
 
 void setNextWalkP(Walker* z) {
-  fadePixel(z->curCol, z->curRow, 0.5);
+  fadePixel(z->curCol, z->curRow, 0.35);
   z->advance();
   // setPixel(curWalkPixel[0], curWalkPixel[1], color);
-  setPixel(z->curCol, NUM_ROWS - z->curRow, z->color);
+  setPixel(z->curCol, z->curRow, z->color);
 }
 
 void setNextWalkPixel3() {
@@ -323,20 +312,81 @@ void rainbowOval() {
   }
 }
 
+typedef void (*Animation)();
+
+void tlAnimation() {
+  tl->update();
+  for (int i = 0; i < 6; i++) {
+    buttonCheck();
+    delay(3);
+  }
+  buttonCheck();
+}
+
+void rainbowAnimation() {
+  rainbowOval();
+  fadeAll(0.18);
+  for (int i = 0; i < 5; i++) {
+    buttonCheck();
+    delay(5);
+  }
+  buttonCheck();
+}
+
+uint32_t lastMazeUpdate = 0;
+
+void mazeWalkAnimation() {
+  uint32_t t = millis();
+  if (t - lastMazeUpdate > 1000) {
+    iterationCount = 0;
+  }
+  lastMazeUpdate = t;
+  setNextWalkPixel3();
+  for (int i = 0; i < 2; i++) {
+    buttonCheck();
+    delay(5);
+  }
+}
+
+
+Animation animations[3] = {rainbowAnimation, tlAnimation, mazeWalkAnimation};
+
+int animationIndex = 0;
+
+void switchAnimation() {
+  animationIndex = (animationIndex + 1) % 3;
+}
+
+void buttonCheck() {
+  button1.update();
+  button2.update();
+
+  if (button1.pressed()) {
+    switchAnimation();
+    // curCol = (curCol + 7) % 8;
+  }
+  if (button2.pressed()) {
+    switchAnimation();
+    // curCol = (curCol + 1) % 8;
+  }
+}
+
+
 void loop() {
 
   // tl->update();
 
   // FastLED.show();
   // delay(50);
-  // iterationCount++;
+  animations[animationIndex]();
+  iterationCount++;
   // fadeAll(0.2);
-  rainbowOval();
-  fadeAll(0.16);
+  // rainbowOval();
+  // fadeAll(0.16);
   // setAll(rainbow[(iterationCount * 10) % RAINBOW_HUES]);
   // fadeAll(0.12);
-  FastLED.show();
-  delay(60);
+  // FastLED.show();
+  // delay(60);
 
   // for (int c = 0; c < 8; c++) {
   //   for (int r = 10; r < NUM_LEDS - 10; r++) {
@@ -347,6 +397,8 @@ void loop() {
 
 
   // setNextWalkPixel3();
+  FastLED.show();
+
   // buttonShow();
   // advanceRainbow();
   // fadeAll(0.17);
