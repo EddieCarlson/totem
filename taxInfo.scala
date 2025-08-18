@@ -1,12 +1,16 @@
-trait External {
-   def readFile(filename: String): List[String] = ???
+object External {
+  var amountOwed: Map[String, Int]
+  def readFile(filename: String): List[String] = ???
 }
 
-object DataProcessor extends External {
-  var amountOwed: Map[String, Int]
+object DataProcessor {
+  import External.amountOwed
+  
+  var filesProcessed: Int
 
   def processFile(data_filename: String): Int = {
-    val fileLines = readFile(data_filename)
+    filesProcessed = filesProcessed + 1
+    val fileLines = External.readFile(data_filename)
     if (data_filename.endsWith(".csv") && data_filename.startsWith("data_report") && data_filename.contains("tax_information")) {
       processData(fileLines)
     } else {
